@@ -1,6 +1,6 @@
 import pandas as pd
 import numpy as np
-from typing import Optional
+from typing import Optional, Tuple
 
 
 class Kalman:
@@ -8,6 +8,8 @@ class Kalman:
                A: np.ndarray, C: np.ndarray, 
                Q: np.ndarray, R: np.ndarray, 
                z0: np.ndarray, P0: np.ndarray,
+               yt: np.ndarray, 
+               ut: Optional[np.ndarray] = None,
                B: Optional[np.ndarray] = None, D: Optional[np.ndarray] = None
                ):
     self.A = A # State transition matrix
@@ -33,39 +35,32 @@ class Kalman:
     assert z0.shape[0] == self.state_dim, "z0 must have the same number of rows as A"
     assert P0.shape[0] == P0.shape[1] == self.state_dim, "P0 must be square and have the same number of rows as A"
 
-  def fit(self, yt, ut):
     self.yt = yt
-    self.ut = ut
-    assert len(y) == len(u), "y and u must have the same length"
-    self.ztt_1, self.zt, self.ztT = (
-      np.zeros((self.state_dim, len(yt)+1)),  # Predicted state estimate
-      np.zeros((self.state_dim, len(yt)+1)),  # Corrected state estimate
-      np.zeros((self.state_dim, len(yt)+1)),  # Smoothed state estimate
-    )
-    self.Ptt_1, self.Pt, self.PtT = (
-      np.zeros((self.state_dim, self.state_dim, len(yt)+1)),  # Predicted state covariance
-      np.zeros((self.state_dim, self.state_dim, len(yt)+1)),  # Corrected state covariance
-      np.zeros((self.state_dim, self.state_dim, len(yt)+1)),  # Smoothed state covariance
-    )
-    self.ztt_1[:, 0], self.Ptt_1[:, :, 0] = self.z0, self.P0
-    self.zt[:, 0], self.Pt[:, :, 0] = self.z0, self.P0
-    self.Kt = np.zeros((self.state_dim, self.meas_dim, len(yt)))  # Kalman gain
-    self.St = np.zeros((self.meas_dim, self.meas_dim, len(yt)))  # Innovation covariance
-    self.Jt = np.zeros((self.state_dim, self.state_dim, len(yt)))  # Smoothing gain (backward Kalman gain)
-    pass
+    self.T = yt.shape[1]
+    self.ut = ut if ut is not None else np.zeros((self.control_dim, self.T))
+    self.zt, ztT = None, None  # filtered and smoothed state estimates, shape (state_dim, len(yt)+1)
+    self.Pt, PtT = None, None  # filtered and smoothed state covariance, shape (state_dim, state_dim, len(yt)+1)
 
   def _predict(self):
-    for i in range(1, len(self.yt)+1):
-      self.ztt_1[:, i] = self.A @ self.ztt_1[:, i-1] + self.B @ self.ut[i-1]
-      self.Ptt_1[:, :, i] = self.A @ self.Ptt_1[:, :, i-1] @ self.A.T + self.Q
+    # initialize state and covariance matrices
+    self.zt = np.zeros((self.state_dim, self.T+1))
+    self.Pt = np.zeros((self.state_dim, self.state_dim, self.T+1))
+    # initialize kalman gain matrix
+    self.Kt = np.zeros((self.state_dim, self.meas_dim, self.T))
+    self.zt[:, 0] = self.z0
+    self.Pt[:, :, 0] = self.P0
+    # predict step
+    for t in range(1, self.T+1):
+      self.zt[:, t] = self.A @ self.zt[:, t-1] + self.B @ self.ut[:, t-1]
+      self.Pt[:, :, t] = self.A @ self.Pt[:, :, t-1] @ self.A.T + self.Q
 
   def _update(self):
-    for i in range(1, len(self.yt)+1):
-      self.St[:, :, i-1] = self.C @ self.Ptt_1[:, :, i] @ self.C.T + self.R
-      self.Kt[:, :, i-1] = self.Ptt_1[:, :, i] @ self.C.T @ np.linalg.inv(self.St[:, :, i-1])
-      yhat_t = self.C @ self.ztt_1[:, i]
-      self.zt[:, i] = self.ztt_1[:, i] + self.Kt[:, :, i-1] @ (self.yt[i-1] - yhat_t)
-      self.Pt[:, :, i] = self.Ptt_1[:, :, i] - self.Kt[:, :, i-1] @ self.C @ self.Ptt_1[:, :, i]
+    # correction step
+    for t in range(1, self.T+1):
+      St = self.C @ self.Pt[:, :, t] @ self.C.T + self.R
+      self.Kt[:, :, t-1] = self.Pt[:, :, t] @ self.C.T @ np.linalg.inv(St)
+      self.zt[:, t] = self.zt[:, t] + self.Kt[:, :, t-1] @ (self.yt[:, t-1] - self.C @ self.zt[:, t])
+      self.Pt[:, :, t] = (np.eye(self.state_dim) - self.Kt[:, :, t-1] @ self.C) @ self.Pt[:, :, t]
   
   def filter(self):
     self._predict()
@@ -73,10 +68,34 @@ class Kalman:
     return self.zt, self.Pt
   
   def smooth(self):
-    for i in range(len(self.yt)-1, -1, -1):
-      self.JtT[:, :, i] = self.Pt[:, :, i] @ self.A.T @ np.linalg.inv(self.Ptt_1[:, :, i+1])
-      self.ztT[:, i] = self.zt[:, i] + self.JtT[:, :, i] @ (self.ztT[:, i+1] - self.ztt_1[:, i+1])
-      self.PtT[:, :, i] = self.Pt[:, :, i] + self.JtT[:, :, i] @ (self.PtT[:, :, i+1] - self.Ptt_1[:, :, i+1]) @ self.JtT[:, :, i].T
+    # initialize smoothed state and covariance matrices
+    self.ztT = np.zeros((self.state_dim, self.T+1))
+    self.PtT = np.zeros((self.state_dim, self.state_dim, self.T+1))
+    # P_{t,t-1|T} cross-covariance of z_t and z_{t-1} given all observations
+    self.Ptt1_T = np.zeros((self.state_dim, self.state_dim, self.T))  
+    # initialize last time step for state and covariance matrices
+    self.ztT[:, -1] = self.zt[:, -1]
+    self.PtT[:, :, -1] = self.Pt[:, :, -1]
+    # initialize last time step for cross-covariance matrix
+    self.Ptt1_T[:, :, -1] = (np.eye(self.state_dim) - self.Kt[:, :, -1] @ self.C) @ self.A @ self.Pt[:, :, -2]
+    # smoothing step (and compute cross-covariance matrix)
+    z_t_tn1, P_t_tn1, J_tn1 = None, None, None
+    for t in range(self.T-1, -1, -1):
+      if z_t_tn1 is not None and P_t_tn1 is not None and J_tn1 is not None:
+        z_tp1_t, P_tp1_t, Jt = z_t_tn1, P_t_tn1, J_tn1
+      else:
+        z_tp1_t = self.A @ self.zt[:, t]
+        P_tp1_t = self.A @ self.Pt[:, :, t] @ self.A.T + self.Q
+        Jt = self.Pt[:, :, t] @ self.A.T @ np.linalg.inv(P_tp1_t)
+      self.ztT[:, t] = self.zt[:, t] + Jt @ (self.ztT[:, t+1] - z_tp1_t)
+      self.PtT[:, :, t] = self.Pt[:, :, t] + Jt @ (self.PtT[:, :, t+1] - P_tp1_t) @ Jt.T
+
+      if t > 0:
+        z_t_tn1 = self.A @ self.zt[:, t-1]
+        P_t_tn1 = self.A @ self.Pt[:, :, t-1] @ self.A.T + self.Q
+        J_tn1 = self.Pt[:, :, t-1] @ self.A.T @ np.linalg.inv(P_t_tn1)
+        self.Ptt1_T[:, :, t-1] = self.Pt[:, :, t] @ J_tn1.T + Jt @ (self.Ptt1_T[:, :, t] - self.A @ self.Pt[:, :, t]) @ J_tn1.T
+    return self.ztT, self.PtT, self.Ptt1_T
     
 
 
