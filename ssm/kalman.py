@@ -4,6 +4,14 @@ from typing import Optional, Tuple
 
 
 class Kalman:
+  """
+  Simple Kalman filter implementation for linear Gaussian state space models.
+  The model is defined by the following equations:
+  z_t = A z_{t-1} + B u_t + w_t, w_t ~ N(0, Q)
+  y_t = C z_t + D u_t + v_t, v_t ~ N(0, R)
+  Only implement inference (filtering and smoothing), 
+  parameter estimation (EM algorithm) is too complex :)
+  """
   def __init__(self, 
                A: np.ndarray, C: np.ndarray, 
                Q: np.ndarray, R: np.ndarray, 
