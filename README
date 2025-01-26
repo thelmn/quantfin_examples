@@ -2,4 +2,5 @@ Collection of interesting quant finance problem implementations.
 
 Current:
 
-- SSM (Kalman filter)
+- SSM (Kalman filter) filter/smooth implementation in numpy
+- HMM timeseries segmentation example in jax
