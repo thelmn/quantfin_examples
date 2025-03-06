@@ -1,9 +1,11 @@
-jax
+jax==0.4.23
+jaxlib==0.4.23
 flax
+dynamax==0.1.5
 distrax
 tensorflow
 tensorflow-probability
 
 matplotlib
 
-scipy
+scipy < 1.13.0

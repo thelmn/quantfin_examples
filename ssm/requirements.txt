@@ -8,6 +8,7 @@ absl-py==2.1.0
     # via
     #   chex
     #   distrax
+    #   dm-tree
     #   keras
     #   optax
     #   orbax-checkpoint
@@ -16,11 +17,13 @@ absl-py==2.1.0
     #   tensorflow-probability
 astunparse==1.6.3
     # via tensorflow
-certifi==2024.12.14
+attrs==25.1.0
+    # via dm-tree
+certifi==2025.1.31
     # via requests
 charset-normalizer==3.4.1
     # via requests
-chex==0.1.88
+chex==0.1.86
     # via
     #   distrax
     #   optax
@@ -34,19 +37,21 @@ decorator==5.1.1
     # via tensorflow-probability
 distrax==0.1.5
     # via -r requirements.in
-dm-tree==0.1.8
+dm-tree==0.1.9
     # via tensorflow-probability
+dynamax==0.1.5
+    # via -r requirements.in
 etils[epath,epy]==1.11.0
-    # via
-    #   optax
-    #   orbax-checkpoint
+    # via orbax-checkpoint
+fastprogress==1.0.3
+    # via dynamax
 flatbuffers==25.1.24
     # via tensorflow
-flax==0.10.2
+flax==0.8.4
     # via -r requirements.in
-fonttools==4.55.6
+fonttools==4.55.8
     # via matplotlib
-fsspec==2024.12.0
+fsspec==2025.2.0
     # via etils
 gast==0.6.0
     # via
@@ -62,26 +67,31 @@ h5py==3.12.1
     # via
     #   keras
     #   tensorflow
-humanize==4.11.0
-    # via orbax-checkpoint
 idna==3.10
     # via requests
 importlib-resources==6.5.2
     # via etils
-jax==0.5.0
+jax==0.4.23
     # via
     #   -r requirements.in
     #   chex
     #   distrax
+    #   dynamax
     #   flax
     #   optax
     #   orbax-checkpoint
-jaxlib==0.5.0
+jaxlib==0.4.23
     # via
+    #   -r requirements.in
     #   chex
     #   distrax
-    #   jax
+    #   dynamax
     #   optax
+    #   orbax-checkpoint
+jaxtyping==0.2.37
+    # via dynamax
+joblib==1.4.2
+    # via scikit-learn
 keras==3.8.0
     # via tensorflow
 kiwisolver==1.4.8
@@ -113,11 +123,13 @@ namex==0.0.8
     # via keras
 nest-asyncio==1.6.0
     # via orbax-checkpoint
-numpy==2.0.2
+numpy==1.26.4
     # via
     #   chex
     #   contourpy
     #   distrax
+    #   dm-tree
+    #   dynamax
     #   flax
     #   h5py
     #   jax
@@ -127,6 +139,7 @@ numpy==2.0.2
     #   ml-dtypes
     #   optax
     #   orbax-checkpoint
+    #   scikit-learn
     #   scipy
     #   tensorboard
     #   tensorflow
@@ -136,11 +149,13 @@ opt-einsum==3.4.0
     # via
     #   jax
     #   tensorflow
-optax==0.2.4
-    # via flax
+optax==0.2.2
+    # via
+    #   dynamax
+    #   flax
 optree==0.14.0
     # via keras
-orbax-checkpoint==0.11.0
+orbax-checkpoint==0.5.16
     # via flax
 packaging==24.2
     # via
@@ -171,13 +186,14 @@ rich==13.9.4
     # via
     #   flax
     #   keras
-scipy==1.15.1
+scikit-learn==1.6.1
+    # via dynamax
+scipy==1.12.0
     # via
     #   -r requirements.in
     #   jax
     #   jaxlib
-simplejson==3.19.3
-    # via orbax-checkpoint
+    #   scikit-learn
 six==1.17.0
     # via
     #   astunparse
@@ -196,17 +212,21 @@ tensorflow-probability==0.25.0
     # via
     #   -r requirements.in
     #   distrax
+    #   dynamax
 tensorstore==0.1.71
     # via
     #   flax
     #   orbax-checkpoint
 termcolor==2.5.0
     # via tensorflow
+threadpoolctl==3.5.0
+    # via scikit-learn
 toolz==1.0.0
     # via chex
 typing-extensions==4.12.2
     # via
     #   chex
+    #   dynamax
     #   etils
     #   flax
     #   optree
@@ -214,12 +234,16 @@ typing-extensions==4.12.2
     #   tensorflow
 urllib3==2.3.0
     # via requests
+wadler-lindig==0.1.3
+    # via jaxtyping
 werkzeug==3.1.3
     # via tensorboard
 wheel==0.45.1
     # via astunparse
 wrapt==1.17.2
-    # via tensorflow
+    # via
+    #   dm-tree
+    #   tensorflow
 zipp==3.21.0
     # via etils
 
